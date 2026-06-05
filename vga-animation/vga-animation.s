@@ -6,7 +6,7 @@ _start:
 	mov r1, #0x0000
 	movt r1, #0xc800 @ write addr
 	
-	ldrh r2, [r0], #2 @ load amount of frames
+	ldr r2, [r0], #4 @ load amount of frames
 
 	mov r12, #0b0 @ control color
 	
@@ -15,10 +15,10 @@ restart:
 	mov r10, r0
 
 loadframe:
-	ldrh r3, [r10], #2 @ load height width
-	mov r7, #0xFF
+	ldr r3, [r10], #4 @ load height width
+	mov r7, #0x1FF
 	and r4, r3, r7
-	lsr r3, #8
+	lsr r3, #9
 	
 	@ r3 - height
 	@ r4 - width
