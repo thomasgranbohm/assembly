@@ -1,64 +1,68 @@
 .global _start
-_start:
-	mov r0, #0x0000
-	movt r0, #0xc000 @ read addr
+_start:	
+	mov r9, #0x0
+	movt r9, #0xc000 @ write addr
 	
-	mov r1, #0x0000
-	movt r1, #0xc800 @ write addr
+	mov r10, #0x3020
+	movt r10, #0xFF20
 	
-	ldr r2, [r0], #4 @ load amount of frames
+    mov r12, #0b100
+    str r12, [r10, #0xC]
+	
+	ldr r12, [r10, #4]
+	cmp r12, r9
+	beq load_info
+	str r9, [r10, #4]
 
-	mov r12, #0b0 @ control color
+load_info:
+	mov r0, #0x20000000 @ bin addr
+	ldr r1, [r0], #4 @ number of frames
 	
-restart:
-	mov r11, r2
-	mov r10, r0
-
-loadframe:
-	ldr r3, [r10], #4 @ load height width
-	mov r7, #0x1FF
-	and r4, r3, r7
-	lsr r3, #9
+load_frame:
+	@ load frame info
+	ldr r9, [r10, #4] @ load write addr
 	
-	@ r3 - height
-	@ r4 - width
+	ldr r2, [r0], #4
+	mov r12, #0x1FF
+	and r3, r2, r12 @ r3 = width
+	lsr r2, #9 @ r2 = height
 	
-
-loadpixel: 
-	mov r5, r1 @ tmp write addr
-	mov r6, #0x0 @ y index
-
-stepy:
-	mov r7, #0x0 @ x index
-stepx:
-	ldrh r8, [r10], #2 @ read r8 in r8 from r0
-	strh r8, [r5], #2 @ write r8 to r1
+	mov r4, #0 @ y index
 	
-	@ loop through pixel columns
-	add r7, #1
-	cmp r7, r4
-	blt stepx
+step_y:
+	mov r5, #0 @ x index
 	
-	@ skip to next pixel row in memory
-	mov r7, #320
-	sub r7, r4
-	lsl r7, #1
-	add r5, r7
-	add r5, #0x180
+step_x:
+	ldr r6, [r0], #4
 	
-	@ loop through pixel rows
-	add r6, #1
-	cmp r6, r3
-	blt stepy
+    @ calculate write addr offset
+	lsl r12, r5, #0x1
+	lsl r11, r4, #0xA
+	add r12, r11
 	
-	mov r9, #0x20000
-
-delay:
-    subs r9, #1
-    bne delay
+	str r6, [r9, r12]
 	
-	subs r11, #0x1
-	bne loadframe
-
-
-	b restart	
+	add r5, #2 @ add 2 cause 2 frames at a time
+	cmp r3, r5
+	bne step_x
+	
+	add r4, #1
+	cmp r2, r4
+	bne step_y
+	
+	mov r11, #1
+	str r11, [r10]
+	
+	mov r11, #0x302C
+	movt r11, #0xFF20
+	
+wait:
+	ldr r12, [r11]
+	tst r12, #1
+	bne wait
+	
+	subs r1, #1
+	bne load_frame
+	
+	b load_info
+	
